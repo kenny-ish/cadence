@@ -547,7 +547,12 @@ func (csc *configStoreClient) getValueWithFilters(key dynamicproperties.Key, fil
 	keyName := key.String()
 	loaded := csc.values.Load()
 	if loaded == nil {
-		return defaultValue, nil
+		// Nothing cached, e.g. an operational config store with no rows yet.
+		// Report it like a key missing from a populated store, so callers fall
+		// back to the default and log at debug level. With a nil error the
+		// typed getters type-check the raw default, and GetIntValue rejects
+		// its own int default as "value type is not int".
+		return defaultValue, dc.NotFoundError
 	}
 	cached := loaded.(cacheEntry)
 	found := false

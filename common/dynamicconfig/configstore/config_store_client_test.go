@@ -431,6 +431,25 @@ func (s *configStoreClientSuite) TestGetIntValue_WrongType() {
 	s.Equal(dynamicproperties.TestGetIntPropertyKey.DefaultInt(), v)
 }
 
+func (s *configStoreClientSuite) TestGetValues_EmptyStore() {
+	// An operational config store with no rows: FetchDynamicConfig returns no
+	// snapshot, so nothing is ever cached (#8621).
+	s.mockManager.EXPECT().
+		FetchDynamicConfig(gomock.Any(), p.DynamicConfig).
+		Return(nil, nil).
+		MaxTimes(1)
+	s.NoError(s.client.update())
+
+	var notExists *types.EntityNotExistsError
+	v, err := s.client.GetIntValue(dynamicproperties.TestGetIntPropertyKey, nil)
+	s.ErrorAs(err, &notExists)
+	s.Equal(dynamicproperties.TestGetIntPropertyKey.DefaultInt(), v)
+
+	b, err := s.client.GetBoolValue(dynamicproperties.TestGetBoolPropertyKey, nil)
+	s.ErrorAs(err, &notExists)
+	s.Equal(dynamicproperties.TestGetBoolPropertyKey.DefaultBool(), b)
+}
+
 func (s *configStoreClientSuite) TestGetFloatValue() {
 	defaultTestSetup(s)
 	v, err := s.client.GetFloatValue(dynamicproperties.TestGetFloat64PropertyKey, nil)
